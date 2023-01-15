@@ -5,7 +5,7 @@
 #include "pros/vision.hpp"
 #include "pros/vision.h"
 #define DEADZONE 15
-#define DIGITAL_SENSOR_PORT 'A'
+#define DIGITAL_SENSOR_PORT 'A' // Testing
 
 // Variables
 bool launcher_toggle = false, snarfer_toggle = false;
