@@ -5,7 +5,7 @@
 #include "pros/vision.hpp"
 #include "pros/vision.h"
 #define DEADZONE 15
-#define DIGITAL_SENSOR_PORT 'A' // Testing
+#define DIGITAL_SENSOR_PORT 'A'
 
 // Variables
 bool launcher_toggle = false, snarfer_toggle = false;
@@ -98,6 +98,7 @@ void autonomous() {
  */
 
 }
+// toggles for the pnuematics
 void firepnuematic() {
   if (firing_input == 1) {
     firing_pneumatic.set_value(true);
