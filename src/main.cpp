@@ -81,8 +81,21 @@ void competition_initialize() {}
  * will be stopped. Re-enabling the robot will restart the task, not re-start it
  * from where it left off.
  */
-void autonomous() {
+float Wheel_Diameter = 10;
+float Wheel_Circumference = Wheel_Diameter * 3.1416;
+float Turning_Diameter = 10;
+float Turning_Circumference = Turning_Diameter * 3.1416;
+float Turning_Power = 127;
 
+void turn(float angle){
+  float Turning_Distance = angle/360 * Turning_Circumference;
+  float Wheel_Revolutions = Turning_Distance/Wheel_Diameter;
+  //if (angle < 0) Wheel_Revolutions *= -1;
+  
+}
+
+void autonomous() {
+  
 /**
  * Runs the operator control code. This function will be started in its own task
  * with the default priority and stack size whenever the robot is enabled via
