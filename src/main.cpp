@@ -84,12 +84,14 @@ void competition_initialize() {}
 float Wheel_Diameter = 10;
 float Wheel_Circumference = Wheel_Diameter * 3.1416;
 float Turning_Diameter = 10;
-float Turning_Circumference = Turning_Diameter;
+float Turning_Circumference = Turning_Diameter * 3.1416;
 float Turning_Power = 127;
-float 
 
 void turn(float angle){
-  distance = angle/360 * Turning_Circuference
+  float Turning_Distance = angle/360 * Turning_Circumference;
+  float Wheel_Revolutions = Turning_Distance/Wheel_Diameter;
+  //if (angle < 0) Wheel_Revolutions *= -1;
+  
 }
 
 void autonomous() {
