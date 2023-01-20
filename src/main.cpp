@@ -91,6 +91,10 @@ void turn(float angle){
   float Turning_Distance = angle/360 * Turning_Circumference;
   float Wheel_Revolutions = Turning_Distance/Wheel_Diameter;
   //if (angle < 0) Wheel_Revolutions *= -1;
+  left_front_motor.rotate(Wheel_Revolutions);
+  left_back_motor.rotate(Wheel_Revolutions);
+  right_front_motor.rotate(-1 * Wheel_Revolutions);
+  right_back_motor.rotate(-1 * Wheel_Revolutions);
   
 }
 
