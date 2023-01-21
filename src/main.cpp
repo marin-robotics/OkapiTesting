@@ -1,5 +1,6 @@
 #include "main.h"
 #include "pros/llemu.hpp"
+#include "pros/misc.h"
 #include "pros/motors.hpp"
 #include "pros/rtos.hpp"
 #include "pros/vision.hpp"
@@ -14,6 +15,7 @@ int forward_table[] = {-127,-125,-123,-121,-119,-117,-115,-113,-112,-110,-108,-1
 int turn_table[] = {-63,-62,-61,-60,-59,-58,-57,-56,-55,-54,-53,-53,-52,-51,-50,-49,-48,-47,-46,-46,-45,-44,-43,-42,-41,-41,-40,-39,-38,-38,-37,-36,-35,-35,-34,-33,-32,-32,-31,-30,-30,-29,-28,-28,-27,-26,-26,-25,-24,-24,-23,-23,-22,-21,-21,-20,-20,-19,-19,-18,-18,-17,-17,-16,-16,-15,-15,-14,-14,-13,-13,-12,-12,-11,-11,-11,-10,-10,-9,-9,-9,-8,-8,-8,-7,-7,-7,-6,-6,-6,-5,-5,-5,-5,-4,-4,-4,-4,-3,-3,-3,-3,-2,-2,-2,-2,-2,-2,-1,-1,-1,-1,-1,-1,-1,-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,2,2,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,6,6,6,7,7,7,8,8,8,9,9,9,10,10,11,11,11,12,12,13,13,14,14,15,15,16,16,17,17,18,18,19,19,20,20,21,21,22,23,23,24,24,25,26,26,27,28,28,29,30,30,31,32,32,33,34,35,35,36,37,38,38,39,40,41,41,42,43,44,45,46,46,47,48,49,50,51,52,53,53,54,55,56,57,58,59,60,61,62,63};
 int launcher_cycle[] = {-97, -107, -117, -127};
 int launcher_power = 3; // default power level
+bool one_stick = true;
 
 // Defining Ports
 pros::Motor left_front_motor(1);
@@ -45,7 +47,11 @@ void on_center_button() {
  */
 void initialize() {
 	pros::lcd::initialize();
-
+  pros::c::motor_set_encoder_units(1,  pros::E_MOTOR_ENCODER_DEGREES);
+  pros::c::motor_set_encoder_units(10, pros::E_MOTOR_ENCODER_DEGREES);
+  pros::c::motor_set_encoder_units(11, pros::E_MOTOR_ENCODER_DEGREES);
+  pros::c::motor_set_encoder_units(20, pros::E_MOTOR_ENCODER_DEGREES);
+  
 	pros::lcd::register_btn1_cb(on_center_button);
 	
 }
@@ -81,21 +87,34 @@ void competition_initialize() {}
  * will be stopped. Re-enabling the robot will restart the task, not re-start it
  * from where it left off.
  */
-float Wheel_Diameter = 10;
+float Wheel_Diameter = 4.5;
 float Wheel_Circumference = Wheel_Diameter * 3.1416;
-float Turning_Diameter = 10;
+float Turning_Diameter = 19;
 float Turning_Circumference = Turning_Diameter * 3.1416;
-float Turning_Power = 127;
+//float Turning_Power = 127;
+int v = 1;
 
 void turn(float angle){
   float Turning_Distance = angle/360 * Turning_Circumference;
-  float Wheel_Revolutions = Turning_Distance/Wheel_Diameter;
-  //if (angle < 0) Wheel_Revolutions *= -1;
-  left_front_motor.rotate(Wheel_Revolutions);
-  left_back_motor.rotate(Wheel_Revolutions);
-  right_front_motor.rotate(-1 * Wheel_Revolutions);
-  right_back_motor.rotate(-1 * Wheel_Revolutions);
+  float Wheel_Revolutions = Turning_Distance/(Wheel_Diameter*3.1416);
+  float Wheel_Rotation = Wheel_Revolutions*360;
+
+  left_front_motor.move_relative(Wheel_Rotation, 60);
+  left_back_motor.move_relative(Wheel_Rotation, 60);
+  right_front_motor.move_relative(Wheel_Rotation, 60);
+  right_back_motor.move_relative(Wheel_Rotation, 60);
   
+  
+  //if (angle < 0) Wheel_Revolutions *= -1;
+  /**left_front_motor.move_velocity(60);
+  left_back_motor.move_velocity(60);
+  right_front_motor.move_velocity(-60);
+  right_back_motor.move_velocity(-60);
+  pros::delay(1000*Wheel_Revolutions);
+  left_front_motor.move_velocity(0);
+  left_back_motor.move_velocity(0);
+  right_front_motor.move_velocity(0);
+  right_back_motor.move_velocity(0);**/
 }
 
 void autonomous() {
@@ -129,11 +148,18 @@ void firepnuematic() {
 
 void opcontrol() {
   // Loop forever
+  //turn(360);
+  left_front_motor.move_relative(360, 100);
+  left_front_motor.move_relative(360, 100);
+  left_front_motor.move_relative(360, 100);
+  left_front_motor.move_relative(360, 100);
+
   while (true) {
-     
     // Get joystick values
     left_y = (controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y));
-    right_x = (controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_X));
+    left_x = (controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_X));
+    right_y = (controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y));
+    right_x = (controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X));
     firing_input = (controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y));
 
     if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_UP) && launcher_power < 3) {
@@ -165,21 +191,30 @@ void opcontrol() {
 
     // Fire pnuematic (Y)
     firepnuematic();
+
+    // Drive Control Loop
+    if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_LEFT)) {
+      one_stick = !one_stick;
+    }
+    if (one_stick) {
+      left_front_motor.move(turn_table[left_x+127] + forward_table[left_y+127]);
+      left_back_motor.move(turn_table[left_x+127] + forward_table[left_y+127]);
+      right_front_motor.move(turn_table[left_x+127] - forward_table[left_y+127]);
+      right_back_motor.move(turn_table[left_x+127] - forward_table[left_y+127]);
+    } else {
+      left_front_motor.move(forward_table[left_y+127]);
+      left_back_motor.move(forward_table[left_y+127]);
+      right_front_motor.move(-1*forward_table[right_y+127]);
+      right_back_motor.move(-1*forward_table[right_y+127]);
+    }
+    // Working Motor Loop
     
-
-
-
-    // Working Motors
-    left_front_motor.move(turn_table[right_x+127] + forward_table[left_y+127]);
-    left_back_motor.move(turn_table[right_x+127] + forward_table[left_y+127]);
-    right_front_motor.move(turn_table[right_x+127] - forward_table[left_y+127]);
-    right_back_motor.move(turn_table[right_x+127] - forward_table[left_y+127]);
     
     // Flipped version of Motors
-    //left_front_motor.move(forward_table[left_y+127] + turn_table[right_x+32]);
-    //left_back_motor.move(forward_table[left_y+127] + turn_table[right_x+32]);
-    //right_front_motor.move(forward_table[left_y+127] - turn_table[right_x+32]);
-    //right_back_motor.move(forward_table[left_y+127] - turn_table[right_x+32]);
+    //left_front_motor.move(forward_table[left_y+127] + turn_table[left_x+32]);
+    //left_back_motor.move(forward_table[left_y+127] + turn_table[left_x+32]);
+    //right_front_motor.move(forward_table[left_y+127] - turn_table[left_x+32]);
+    //right_back_motor.move(forward_table[left_y+127] - turn_table[left_x+32]);
     
     
     // Wait a bit before continuing the loop
