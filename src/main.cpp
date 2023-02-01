@@ -1,10 +1,12 @@
 #include "main.h"
+#include "display/lv_objx/lv_list.h"
 #include "pros/llemu.hpp"
 #include "pros/misc.h"
 #include "pros/motors.hpp"
 #include "pros/rtos.hpp"
 #include "pros/vision.hpp"
 #include "pros/vision.h"
+#include <string>
 #define DEADZONE 15
 #define DIGITAL_SENSOR_PORT 'A'
 
@@ -101,13 +103,35 @@ float Turning_Circumference = Turning_Diameter * 3.1416;
 //float Turning_Power = 127;
 int v = 1;
 
+bool check_each_in_vector(float left_goal, float right_goal, float threshold){
+  if ((left_front_motor.get_position() > left_goal+threshold) && left_front_motor.get_position() < left_goal-threshold) {
+    return true;
+  }
+  if ((left_back_motor.get_position() > left_goal+threshold) && left_back_motor.get_position() < left_goal-threshold) {
+    return true;
+  }
+  if ((right_front_motor.get_position() > right_goal+threshold) && right_front_motor.get_position() < right_goal-threshold) {
+    return true;
+  }
+  if ((right_back_motor.get_position() > right_goal+threshold) && right_back_motor.get_position() < right_goal-threshold) {
+    return true;
+  } 
+  return false;
+}
 void turn(float angle){
   float Turning_Distance = angle/360 * Turning_Circumference;
   float Wheel_Revolutions = Turning_Distance/(Wheel_Diameter*3.1416);
-  float Wheel_Rotation = Wheel_Revolutions*360;
+  float Wheel_Rotation = Wheel_Revolutions*360; // Degrees that the wheel should turn
 
   left_motors.move_absolute(Wheel_Rotation, 60);
-  right_motors.move_absolute(Wheel_Rotation, 60);
+  right_motors.move_absolute(-1*Wheel_Rotation, 60);
+  // for each motor in the motor group, check that it is not within 5 units of the goal, and if that is true for even one motor, enter the delay loop
+  while (check_each_in_vector(Wheel_Rotation, -1*Wheel_Rotation, 5)) {
+    // Continue running this loop as long as the motors are not within +-5 units of its goal
+    pros::delay(2);
+  left_motors.tare_position();
+  }
+  //while (!())
   /*while (!((left_motors.get_positions() < Wheel_Rotation+5) && (left_motors.get_positions() > Wheel_Rotation-5) && (right_motors.get_positions() < Wheel_Rotation+5) && (right_motors.get_positions() > Wheel_Rotation-5))) {
     // Continue running this loop as long as the motors are not within +-5 units of its goal
     pros::delay(2);
@@ -171,6 +195,7 @@ void firepnuematic() {
 }
 
 void opcontrol() {
+  firing_input = 0; // Stop auto firing pnuematic
   // Loop forever
   //turn(360);
   
@@ -181,6 +206,7 @@ void opcontrol() {
   */
 
   while (true) {
+    pros::lcd::clear();
     // Get joystick values
     left_y = (controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y));
     left_x = (controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_X));
@@ -188,7 +214,7 @@ void opcontrol() {
     right_x = (controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X));
     firing_input = (controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y));
 
-    if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_UP) && launcher_power < 3) {
+    if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_UP) && launcher_power < 8) {
       launcher_power += 1;
     }
     if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_DOWN) && launcher_power > 0) {
@@ -224,17 +250,8 @@ void opcontrol() {
         secondary_snarfer_motor = 0;
       }
     }
-    /*  
-      snarfer_motor.move(-127);
-      secondary_snarfer_motor.move(-127);
-    } else {
-      snarfer_motor.move(0);
-      secondary_snarfer_motor.move(0);
-    }
-    if ((!snarfer_toggle) && (controller.get_digital(pros::E_CONTROLLER_DIGITAL_RIGHT))){
-      secondary_snarfer_motor.move(127);
-    }
-    */
+
+    // Roller motor (R1/R2)
 
     if (!((controller.get_digital(DIGITAL_R1)) && (controller.get_digital(DIGITAL_R2)))) {
       if (controller.get_digital(DIGITAL_R1)) {
@@ -250,16 +267,21 @@ void opcontrol() {
     // Fire pnuematic (Y)
     firepnuematic();
 
-    // Drive Control Loop
+    // Drive Control Loop (LEFT)
     if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_LEFT)) {
       one_stick = !one_stick;
     }
     if (one_stick){
       left_motors.move(forward_table[left_x+127] + forward_table[left_y+127]);
       right_motors.move(forward_table[left_x+127] - forward_table[left_y+127]);
+      pros::lcd::set_text(1, "Left Motors Speed: " + std::to_string(forward_table[left_x+127] + forward_table[left_y+127]));
+      pros::lcd::set_text(2, "Right Motors Speed: "+ std::to_string(forward_table[left_x+127] - forward_table[left_y+127]));
+    
     } else {
       left_motors.move(forward_table[left_y+127]);
       right_motors.move(-1*forward_table[right_y+127]);
+      pros::lcd::set_text(1,"Left Motors Speed: " + std::to_string(forward_table[left_y+127]));
+      pros::lcd::set_text(1,"Right Motors Speed: " + std::to_string(-1*forward_table[right_y+127]));
     }
     
     // Working on braking RANDOM CODE SNIPPETS BELOW
