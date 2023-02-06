@@ -2,6 +2,7 @@
 #include "display/lv_objx/lv_list.h"
 #include "pros/llemu.hpp"
 #include "pros/misc.h"
+#include "pros/misc.hpp"
 #include "pros/motors.hpp"
 #include "pros/rtos.hpp"
 #include "pros/vision.hpp"
@@ -18,13 +19,15 @@ int turn_table[] = {-63,-62,-61,-60,-59,-58,-57,-56,-55,-54,-53,-53,-52,-51,-50,
 int launcher_cycle[] = {77,82,87,92,97,112, 117, 122, 127};
 int launcher_power = 8; // default power level
 bool one_stick = true;
-float Wheel_Diameter = 4.5;
+float Wheel_Diameter = 4;
 float Wheel_Circumference = Wheel_Diameter * 3.1416;
-float Turning_Diameter = 19;
+float Turning_Diameter = 14.6;
 float Turning_Circumference = Turning_Diameter * 3.1416;
 float Turning_Distance = 0;
 float Wheel_Revolutions = 0;
-float Wheel_Rotation = 0;
+float Turn_Wheel_Rotation = 0;
+float Forward_Wheel_Rotation = 0;
+bool wait = false; 
 
 // Defining ports
 pros::Motor left_front_motor(1,pros::E_MOTOR_GEAR_GREEN, false, pros::E_MOTOR_ENCODER_DEGREES);
@@ -119,26 +122,54 @@ bool check_each_in_vector(float left_goal, float right_goal, float threshold) {
   }
   return false;
 }
-void turn(float angle){
-  float Turning_Distance = angle/360 * Turning_Circumference;
-  float Wheel_Revolutions = Turning_Distance/(Wheel_Diameter*);
-  float Wheel_Rotation = Wheel_Revolutions*360; // Degrees that the wheel should turn
+void turn(float angle, float velocity){
+  wait = true; //stop turn from running multiple times
+  
+  Turning_Distance = angle/360 * Turning_Circumference;
+  Wheel_Revolutions = Turning_Distance/Wheel_Circumference;
+  Turn_Wheel_Rotation = Wheel_Revolutions*360; // Degrees that the wheel should turn
 
-  left_motors.move_absolute(Wheel_Rotation, 60);
-  right_motors.move_absolute(Wheel_Rotation, -60);
-  // for each motor in the motor group, check that it is not within 5 units of the goal, and if that is true for even one motor, enter the delay loop
-  while (check_each_in_vector(Wheel_Rotation, -1*Wheel_Rotation, 10)) {
-    // Continue running this loop as long as the motors are not within +-5 units of its goal
-    pros::delay(2);
   left_motors.tare_position();
   right_motors.tare_position();
 
+  left_motors.move_absolute(Turn_Wheel_Rotation, velocity);
+  right_motors.move_absolute(Turn_Wheel_Rotation, -velocity);
+  while (check_each_in_vector(Turn_Wheel_Rotation, -Turn_Wheel_Rotation, 10)) {
+    pros::delay(2);
   }
+  left_motors.tare_position();
+  right_motors.tare_position();
+  
+  wait = false; //stop turn from running multiple times
 }
 
-void autonomous() {+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  turn(135);
-  turn(360);
+void move(float inches, float velocity) {
+  wait = true;
+  
+  Forward_Wheel_Rotation = (inches/Wheel_Circumference)*360;
+
+  left_motors.tare_position();
+  right_motors.tare_position();
+
+  left_motors.move_absolute((Forward_Wheel_Rotation),velocity);
+  right_motors.move_absolute((Forward_Wheel_Rotation),-velocity);
+  while (check_each_in_vector(Forward_Wheel_Rotation, -Forward_Wheel_Rotation, 360)) {
+    // Continue running this loop as long as the motors are not within +-5 units of its goal
+    pros::lcd::set_text(1,"Running Delay Loop");
+    pros::delay(2);
+  }
+  left_motors.tare_position();
+  right_motors.tare_position();
+
+  wait = false;
+}
+void autonomous() {
+  pros::lcd::clear();v 
+  while (wait) {pros::delay(10);} turn(360, 100);
+  while (wait) {pros::delay(10);} move(48,100);
+  while (wait) {pros::delay(10);} turn(360,100);
+  while (wait) {pros::delay(10);} move(48,100);
+  
 /**
  * Runs the operator control code. This function will be started in its own task
  * with the default priority and stack size whenever the robot is enabled via
@@ -150,58 +181,54 @@ void autonomous() {+------------------------------------------------------------
  *
  * If the robot is disabled or communications is lost, the
  * operator control task will be stopped. Re-enabling the robot will restart the
- * task, not resume it from where it left off.
-
- 
- *     for (int i=0; i<7 ; i++) {
-      if (!((firing_input == 1) || (launcher_toggle))){
-        firing_pneumatic.set_value(false);
-        i = 100; // just a high number to kill the for loop
-      }
-      pros::delay(10);
-    }
-    firing_pneumatic.set_value(false);
-    pros::delay(400);
-  
-
- 
- 
- 
+ * task, not resume it from where it left off. 
  */
 
 }
 // toggles for the pnuematics
 void firepnuematic() {
-  
-  
-  while ((firing_input == 1) && (launcher_toggle)) {
+  if ((firing_input == 1) && (launcher_toggle)) {
     firing_pneumatic.set_value(true);
-    for (int i=0; i<10 ; i++) {
+    for (int i=0; i<70 ; i++) {
       if ((firing_input == 1) && (launcher_toggle)){
-        firing_pneumatic.set_value(true);
         pros::delay(10);
       } else {
-        firing_pneumatic.set_value(true);
+        firing_pneumatic.set_value(false);
+        //return;
         i = 100; // just a high number to kill the for loop
       }
     }
     firing_pneumatic.set_value(false);
-    pros::delay(400);
+    for (int i=0; i<70 ; i++) {
+      if ((firing_input == 1) && (launcher_toggle)){
+        pros::delay(10);
+      } else {
+        //return;
+        i = 100; // just a high number to kill the for loop
+      }
+    }
+  } else {
+    firing_pneumatic.set_value(false);
   }
-  firing_pneumatic.set_value(false);
 }
 
 void opcontrol() {
   firing_input = 0; // Stop auto firing pnuematic
-
   while (true) {
     pros::lcd::clear();
+    controller.clear();
+
     // Get joystick values
     left_y = (controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y));
     left_x = (controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_X));
     right_y = (controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y));
     right_x = (controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X));
     firing_input = (controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y));
+    pros::lcd::set_text(3, "Launching Motor Efficiency: " + std::to_string(launcher_motor.get_efficiency()));
+    pros::lcd::set_text(4, "Launching Motor Temperature: " + std::to_string(launcher_motor.get_temperature()));
+    pros::lcd::set_text(5, "Launching Motor Wattage: " + std::to_string(launcher_motor.get_power()));
+
+    controller.set_text(1,1,"Power: ");//* + std::to_string(launcher_power[launcher_cycle]));
 
     if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_UP) && launcher_power < 8) {
       launcher_power += 1;
@@ -254,7 +281,7 @@ void opcontrol() {
 
 
     // Fire pnuematic (Y)
-//    firepnuematic();
+    firepnuematic();
 
     // Drive Control Loop (LEFT)
     if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_LEFT)) {
@@ -272,34 +299,8 @@ void opcontrol() {
       pros::lcd::set_text(1,"Left Motors Speed: " + std::to_string(forward_table[left_y+127]));
       pros::lcd::set_text(1,"Right Motors Speed: " + std::to_string(-1*forward_table[right_y+127]));
     }
-    
-    // Working on braking RANDOM CODE SNIPPETS BELOW
-    /*if (one_stick) {
-      if ((forward_table[left_y] != 0) && (turn_table[left_x] != 0)) { // If one stick drive is enabled and joystick is actually moving then go.
-        left_motors.move(turn_table[left_x+127] + forward_table[left_y+127]);
-        right_motors.move(turn_table[left_x+127] - forward_table[left_y+127]);
-      } else {
-      left_motors.brake();
-      right_motors.brake();
-      }
-    } else {
-      if ((forward_table[left_y]) && (forward_table[right_y])) {}
-        
-    } 
-    } if ((!one_stick) && (turn_table[left_y] = 0)) { // Tank Drive
-      
-      left_motors.move(forward_table[left_y+127]);
-      
-    } if ((!one_stick) && (turn_table[right_y] = 0))
-      right_motors.move(-1*forward_table[right_y+127]);
-      
-      left_front_motor.move(forward_table[left_y+127]);
-      left_back_motor.move(forward_table[left_y+127]);
-      right_front_motor.move(-1*forward_table[right_y+127]);
-      right_back_motor.move(-1*forward_table[right_y+127]);
-      */
 
-    // Wait a bit before continuing the loop
+
     pros::delay(20);
   }
 }
