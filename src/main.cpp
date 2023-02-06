@@ -18,6 +18,13 @@ int turn_table[] = {-63,-62,-61,-60,-59,-58,-57,-56,-55,-54,-53,-53,-52,-51,-50,
 int launcher_cycle[] = {77,82,87,92,97,112, 117, 122, 127};
 int launcher_power = 8; // default power level
 bool one_stick = true;
+float Wheel_Diameter = 4.5;
+float Wheel_Circumference = Wheel_Diameter * 3.1416;
+float Turning_Diameter = 19;
+float Turning_Circumference = Turning_Diameter * 3.1416;
+float Turning_Distance = 0;
+float Wheel_Revolutions = 0;
+float Wheel_Rotation = 0;
 
 // Defining ports
 pros::Motor left_front_motor(1,pros::E_MOTOR_GEAR_GREEN, false, pros::E_MOTOR_ENCODER_DEGREES);
@@ -96,77 +103,42 @@ void competition_initialize() {}
  * will be stopped. Re-enabling the robot will restart the task, not re-start it
  * from where it left off.
  */
-float Wheel_Diameter = 4.5;
-float Wheel_Circumference = Wheel_Diameter * 3.1416;
-float Turning_Diameter = 19;
-float Turning_Circumference = Turning_Diameter * 3.1416;
-//float Turning_Power = 127;
-int v = 1;
-
-bool check_each_in_vector(float left_goal, float right_goal, float threshold){
-  if ((left_front_motor.get_position() > left_goal+threshold) && left_front_motor.get_position() < left_goal-threshold) {
+//float Turning_Power = 127; 
+bool check_each_in_vector(float left_goal, float right_goal, float threshold) {
+  if ((left_front_motor.get_position() > left_goal+threshold) || left_front_motor.get_position() < left_goal-threshold) {
     return true;
   }
-  if ((left_back_motor.get_position() > left_goal+threshold) && left_back_motor.get_position() < left_goal-threshold) {
+  if ((left_back_motor.get_position() > left_goal+threshold) || left_back_motor.get_position() < left_goal-threshold) {
     return true;
   }
-  if ((right_front_motor.get_position() > right_goal+threshold) && right_front_motor.get_position() < right_goal-threshold) {
+  if ((right_front_motor.get_position() > right_goal+threshold) || right_front_motor.get_position() < right_goal-threshold) {
     return true;
   }
-  if ((right_back_motor.get_position() > right_goal+threshold) && right_back_motor.get_position() < right_goal-threshold) {
+  if ((right_back_motor.get_position() > right_goal+threshold) || right_back_motor.get_position() < right_goal-threshold) {
     return true;
-  } 
+  }
   return false;
 }
 void turn(float angle){
   float Turning_Distance = angle/360 * Turning_Circumference;
-  float Wheel_Revolutions = Turning_Distance/(Wheel_Diameter*3.1416);
+  float Wheel_Revolutions = Turning_Distance/(Wheel_Diameter*);
   float Wheel_Rotation = Wheel_Revolutions*360; // Degrees that the wheel should turn
 
   left_motors.move_absolute(Wheel_Rotation, 60);
-  right_motors.move_absolute(-1*Wheel_Rotation, 60);
+  right_motors.move_absolute(Wheel_Rotation, -60);
   // for each motor in the motor group, check that it is not within 5 units of the goal, and if that is true for even one motor, enter the delay loop
-  while (check_each_in_vector(Wheel_Rotation, -1*Wheel_Rotation, 5)) {
-    // Continue running this loop as long as the motors are not within +-5 units of its goal
-    pros::delay(2);
-  left_motors.tare_position();
-  }
-  //while (!())
-  /*while (!((left_motors.get_positions() < Wheel_Rotation+5) && (left_motors.get_positions() > Wheel_Rotation-5) && (right_motors.get_positions() < Wheel_Rotation+5) && (right_motors.get_positions() > Wheel_Rotation-5))) {
+  while (check_each_in_vector(Wheel_Rotation, -1*Wheel_Rotation, 10)) {
     // Continue running this loop as long as the motors are not within +-5 units of its goal
     pros::delay(2);
   left_motors.tare_position();
   right_motors.tare_position();
-  */
 
-
-  /*while (true){
-    for (int count = 0; count <= std::size(left_motors); count++)
   }
-
-  while (!((left_motors.get_positions() < Wheel_Rotation+5) && (left_motors.get_positions() > Wheel_Rotation-5) && (right_motors.get_positions() < Wheel_Rotation+5) && (right_motors.get_positions() > Wheel_Rotation-5))) {
-    // Continue running this loop as long as the motors are not within +-5 units of its goal
-    pros::delay(2);
-  left_motors.tare_position();
-  right_motors.tare_position();
-  }*/
-  
-  
-  
-  //if (angle < 0) Wheel_Revolutions *= -1;
-  /**left_front_motor.move_velocity(60);
-  left_back_motor.move_velocity(60);
-  right_front_motor.move_velocity(-60);
-  right_back_motor.move_velocity(-60);
-  pros::delay(1000*Wheel_Revolutions);
-  left_front_motor.move_velocity(0);
-  left_back_motor.move_velocity(0);
-  right_front_motor.move_velocity(0);
-  right_back_motor.move_velocity(0);**/
 }
 
-void autonomous() {
-  
+void autonomous() {+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  turn(135);
+  turn(360);
 /**
  * Runs the operator control code. This function will be started in its own task
  * with the default priority and stack size whenever the robot is enabled via
@@ -179,31 +151,48 @@ void autonomous() {
  * If the robot is disabled or communications is lost, the
  * operator control task will be stopped. Re-enabling the robot will restart the
  * task, not resume it from where it left off.
+
+ 
+ *     for (int i=0; i<7 ; i++) {
+      if (!((firing_input == 1) || (launcher_toggle))){
+        firing_pneumatic.set_value(false);
+        i = 100; // just a high number to kill the for loop
+      }
+      pros::delay(10);
+    }
+    firing_pneumatic.set_value(false);
+    pros::delay(400);
+  
+
+ 
+ 
+ 
  */
 
 }
 // toggles for the pnuematics
 void firepnuematic() {
-  if ((firing_input == 1) && (launcher_toggle)) {
+  
+  
+  while ((firing_input == 1) && (launcher_toggle)) {
     firing_pneumatic.set_value(true);
-    pros::delay(780);
+    for (int i=0; i<10 ; i++) {
+      if ((firing_input == 1) && (launcher_toggle)){
+        firing_pneumatic.set_value(true);
+        pros::delay(10);
+      } else {
+        firing_pneumatic.set_value(true);
+        i = 100; // just a high number to kill the for loop
+      }
+    }
     firing_pneumatic.set_value(false);
-    pros::delay(780);
-  } else {
-    firing_pneumatic.set_value(false);
+    pros::delay(400);
   }
+  firing_pneumatic.set_value(false);
 }
 
 void opcontrol() {
   firing_input = 0; // Stop auto firing pnuematic
-  // Loop forever
-  //turn(360);
-  
-  /*
-  left_motors.move_relative(135, 100);
-  right_motors.move_relative(135,100);
-  pros::delay(1000);
-  */
 
   while (true) {
     pros::lcd::clear();
@@ -265,7 +254,7 @@ void opcontrol() {
 
 
     // Fire pnuematic (Y)
-    firepnuematic();
+//    firepnuematic();
 
     // Drive Control Loop (LEFT)
     if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_LEFT)) {
