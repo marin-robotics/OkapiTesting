@@ -22,7 +22,6 @@ int turn_table[] = {
 };
 int launcher_cycle[] = {77,82,87,92,97,112, 117, 122, 127};
 int launcher_power = 5; // default power level
-bool one_stick = true;
 float Wheel_Diameter = 4;
 float Wheel_Circumference = Wheel_Diameter * 3.1416;
 float Turning_Diameter = 14.6;
@@ -409,23 +408,16 @@ void opcontrol() {
       endgame.set_value(true);
     }
 
-    // Drive Control Loop (LEFT)
+    /* Drive Control Loop (LEFT)
     if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_LEFT)) {
       one_stick = !one_stick;
     }
-    if (one_stick){ // One Stick Drive
-      left_motors.move(forward_table[left_x+127] + forward_table[left_y+127]);
-      right_motors.move(forward_table[left_x+127] - forward_table[left_y+127]);
-      pros::lcd::set_text(1, "Left Motors Speed: " + std::to_string(forward_table[left_x+127] + forward_table[left_y+127]));
-      pros::lcd::set_text(2, "Right Motors Speed: "+ std::to_string(forward_table[left_x+127] - forward_table[left_y+127]));
+    */
     
-    } else { // Tank Drive
-      left_motors.move(forward_table[left_y+127]);
-      right_motors.move(-1*forward_table[right_y+127]);
-      pros::lcd::set_text(1,"Left Motors Speed: " + std::to_string(forward_table[left_y+127]));
-      pros::lcd::set_text(1,"Right Motors Speed: " + std::to_string(-1*forward_table[right_y+127]));
-    }
-
+    left_motors.move(forward_table[left_x+127] + forward_table[left_y+127]);
+    right_motors.move(forward_table[left_x+127] - forward_table[left_y+127]);
+    pros::lcd::set_text(1, "Left Motors Speed: " + std::to_string(forward_table[left_x+127] + forward_table[left_y+127]));
+    pros::lcd::set_text(2, "Right Motors Speed: "+ std::to_string(forward_table[left_x+127] - forward_table[left_y+127]));
 
     pros::delay(20);
   }
