@@ -164,7 +164,7 @@ void move(float inches, float velocity) {
   wait = false;
 }
 void autonomous() {
-  pros::lcd::clear();v 
+  pros::lcd::clear(); 
   while (wait) {pros::delay(10);} turn(360, 100);
   while (wait) {pros::delay(10);} move(48,100);
   while (wait) {pros::delay(10);} turn(360,100);
