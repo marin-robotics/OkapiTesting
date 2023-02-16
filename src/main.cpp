@@ -22,7 +22,6 @@ int turn_table[] = {
 };
 int launcher_cycle[] = {77,82,87,92,97,112, 117, 122, 127};
 int launcher_power = 5; // default power level
-bool one_stick = true;
 float Wheel_Diameter = 4;
 float Wheel_Circumference = Wheel_Diameter * 3.1416;
 float Turning_Diameter = 14.6;
@@ -214,17 +213,16 @@ void simple_fire(int delay) {
   pros::delay(delay);
   wait = false;
 }
-void auto_roller(int delay){
+void auto_roller(int delay, int move_velocity){
   wait = true;
-  roller_motor = -100;
-  left_motors.move(60);
-  right_motors.move(-60);
+  roller_motor = -127;
+  left_motors.move(move_velocity);
+  right_motors.move(-move_velocity);
   pros::delay(delay);
   roller_motor = 0;
   left_motors.move(0);
   right_motors.move(0);
   wait = false;
-  
 }
 /*
 void snarfer_loop() {
@@ -271,53 +269,92 @@ void auto_fire() {
     firing_pneumatic.set_value(false);
   }
 }
-void autonomous() {
-  pros::lcd::clear();
-  pros::lcd::set_text(1, "Starting"); 
-  //snarfer_loop();
-  //launcher_loop();
 
-  while (wait) {pros::delay(10);} auto_roller(500); pros::delay(500);
+void auton1(){ //Roller and 5 disks on wide area
+  launcher_motor = 100; 
   
-  while (wait) {pros::delay(10);} right_pivot_turn(-40,100); pros::delay(500);
+  while (wait) {pros::delay(10);} auto_roller(400,60); pros::delay(400);
+  
+  while (wait) {pros::delay(10);} right_pivot_turn(-40,100); pros::delay(400);
   
   while (wait) {pros::delay(10);} turn(-50,100); pros::delay(500);
-  
-  launcher_motor = 95; 
-  
-  pros::delay(2000);
 
-  while (wait) {pros::delay(10);} simple_fire(700); pros::delay(500);
+  while (wait) {pros::delay(10);} simple_fire(700); pros::delay(200);
 
-  while (wait) {pros::delay(10);} simple_fire(700); pros::delay(500);
+  while (wait) {pros::delay(10);} simple_fire(700); pros::delay(200);
 
   launcher_motor = 0;
-
-  while (wait) {pros::delay(10);} turn(-40,100); pros::delay(500);
-
   snarfer_motor = -127;
   secondary_snarfer_motor = -127;
 
-  while (wait) {pros::delay(10);} move(65,40); pros::delay(500);
+  while (wait) {pros::delay(10);} turn(-45,100); pros::delay(300);
+
+  while (wait) {pros::delay(10);} move(40,90); pros::delay(500);
+
+  secondary_snarfer_motor = 127;
+  
+  while (wait) {pros::delay(10);} move(20,80); pros::delay(500);
 
   while (wait) {pros::delay(10);} turn(90,50); pros::delay(1500);
 
+  launcher_motor = 90; 
   snarfer_motor = 0;
   secondary_snarfer_motor = 0;
 
-  launcher_motor = 90; 
-  
-  pros::delay(2000);
+  pros::delay(1000);
 
-  while (wait) {pros::delay(10);} simple_fire(700); pros::delay(500);
+  while (wait) {pros::delay(10);} simple_fire(700); pros::delay(200);
 
-  while (wait) {pros::delay(10);} simple_fire(700); pros::delay(500);  
+  while (wait) {pros::delay(10);} simple_fire(700); pros::delay(200);  
 
-  while (wait) {pros::delay(10);} simple_fire(700); pros::delay(500);
+  while (wait) {pros::delay(10);} simple_fire(700); pros::delay(200);
 
   launcher_motor = 0;
+}
+void auton2(){ // Shoot two on small area
 
+  launcher_motor = 80; pros::delay(1000);
 
+  simple_fire(1000);
+  
+  simple_fire(1000); 
+  
+  pros::delay(1000);
+
+  launcher_motor = 0; 
+}
+
+void auton3(){ // Face low goal, fire, then get roller
+  launcher_motor = 100; pros::delay(1000);
+
+  simple_fire(800);
+  
+  simple_fire(800);
+  
+  pros::delay(500);
+  
+  launcher_motor = 0; 
+
+  //while (wait) {pros::delay(10);} turn(180,50); pros::delay(300);
+  
+  while (wait) {pros::delay(10);} move(-32,40); pros::delay(300);
+  
+  while (wait) {pros::delay(10);} turn(-95,50); pros::delay(500);
+
+  while (wait) {pros::delay(10);} auto_roller(500,  80); 
+
+  launcher_motor = 0; 
+
+  while (wait) {pros::delay(10);} move(-3,40); pros::delay(300);
+
+  while (wait) {pros::delay(10);} turn(-120,50); pros::delay(500);
+
+}
+
+void autonomous() {
+  pros::lcd::clear();
+  pros::lcd::set_text(1, "Starting"); 
+  auton3();
 
 
 
@@ -325,6 +362,7 @@ void autonomous() {
   //while (wait) {pros::delay(10);} turn(-360, 100); pros::delay(1000);
 
   
+
 /**
  * Runs the operator control code. This function will be started in its own task
  * with the default priority and stack size whenever the robot is enabled via
@@ -409,23 +447,16 @@ void opcontrol() {
       endgame.set_value(true);
     }
 
-    // Drive Control Loop (LEFT)
+    /* Drive Control Loop (LEFT)
     if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_LEFT)) {
       one_stick = !one_stick;
     }
-    if (one_stick){ // One Stick Drive
-      left_motors.move(forward_table[left_x+127] + forward_table[left_y+127]);
-      right_motors.move(forward_table[left_x+127] - forward_table[left_y+127]);
-      pros::lcd::set_text(1, "Left Motors Speed: " + std::to_string(forward_table[left_x+127] + forward_table[left_y+127]));
-      pros::lcd::set_text(2, "Right Motors Speed: "+ std::to_string(forward_table[left_x+127] - forward_table[left_y+127]));
-    
-    } else { // Tank Drive
-      left_motors.move(forward_table[left_y+127]);
-      right_motors.move(-1*forward_table[right_y+127]);
-      pros::lcd::set_text(1,"Left Motors Speed: " + std::to_string(forward_table[left_y+127]));
-      pros::lcd::set_text(1,"Right Motors Speed: " + std::to_string(-1*forward_table[right_y+127]));
-    }
+    */
 
+    left_motors.move(forward_table[left_x+127] + forward_table[left_y+127]);
+    right_motors.move(forward_table[left_x+127] - forward_table[left_y+127]);
+    pros::lcd::set_text(1, "Left Motors Speed: " + std::to_string(forward_table[left_x+127] + forward_table[left_y+127]));
+    pros::lcd::set_text(2, "Right Motors Speed: "+ std::to_string(forward_table[left_x+127] - forward_table[left_y+127]));
 
     pros::delay(20);
   }
