@@ -1,5 +1,6 @@
 #include "main.h"
 #include "display/lv_objx/lv_list.h"
+#include "pros/adi.hpp"
 #include "pros/llemu.hpp"
 #include "pros/misc.h"
 #include "pros/misc.hpp"
@@ -10,6 +11,8 @@
 #include <string>
 #define DIGITAL_SENSOR_PORT_A 'A'
 #define DIGITAL_SENSOR_PORT_B 'B'
+#define DIGITAL_SENSOR_PORT_C 'C'
+
 
 // Variables
 bool launcher_toggle = false, snarfer_toggle = false;
@@ -22,6 +25,9 @@ int turn_table[] = {
 };
 int launcher_cycle[] = {77,82,87,92,97,112, 117, 122, 127};
 int launcher_power = 5; // default power level
+
+// auton
+
 float Wheel_Diameter = 4;
 float Wheel_Circumference = Wheel_Diameter * 3.1416;
 float Turning_Diameter = 14.6;
@@ -34,6 +40,8 @@ float Turn_Tuning_Factor = 1;
 float Move_Tuning_Factor = 1.05;
 bool wait = false; 
 
+
+
 // Defining ports
 pros::Motor left_front_motor(1,pros::E_MOTOR_GEAR_GREEN, false, pros::E_MOTOR_ENCODER_DEGREES);
 pros::Motor right_front_motor(10,pros::E_MOTOR_GEAR_GREEN, false, pros::E_MOTOR_ENCODER_DEGREES);
@@ -43,8 +51,11 @@ pros::Motor snarfer_motor(2);
 pros::Motor secondary_snarfer_motor(4);
 pros::Motor launcher_motor(13,pros::E_MOTOR_GEAR_BLUE, true, pros::E_MOTOR_ENCODER_DEGREES);
 pros::Motor roller_motor(3);
+
+// pneumatics
 pros::ADIDigitalOut firing_pneumatic(DIGITAL_SENSOR_PORT_A);
 pros::ADIDigitalOut endgame(DIGITAL_SENSOR_PORT_B);
+pros::ADIDigitalOut net_launch(DIGITAL_SENSOR_PORT_C);
 
 // Set motor groups
 pros::Motor_Group left_motors ({left_front_motor, left_back_motor});
@@ -350,11 +361,17 @@ void auton3(){ // Face low goal, fire, then get roller
   while (wait) {pros::delay(10);} turn(-120,50); pros::delay(500);
 
 }
+void auton4(){ // Shoot two on small area
+  while (wait) {pros::delay(10);} auto_roller(250, 50); pros::delay(400);
+  while (wait) {pros::delay(10);} move(20,80); pros::delay(500);
+  pros::delay(1000);
+
+}
 
 void autonomous() {
   pros::lcd::clear();
   pros::lcd::set_text(1, "Starting"); 
-  auton3();
+  auton4();
 
 
 
@@ -445,6 +462,13 @@ void opcontrol() {
 
     if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_RIGHT) && (controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y))){
       endgame.set_value(true);
+    }
+
+    // Fire net launcher
+    if (controller.get_digital(DIGITAL_Y)){
+      if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_LEFT)){
+        net_launch.set_value(true);
+      }
     }
 
     /* Drive Control Loop (LEFT)
