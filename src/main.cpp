@@ -19,11 +19,6 @@ using namespace std;
 #define DIGITAL_SENSOR_PORT_D 'D'
 #define DIGITAL_SENSOR_PORT_E 'E'
 
-enum TEAM {RED, BLUE};
-TEAM selected_team = RED;
-
-bool team_red = true;
-
 // Variable
 int left_x, left_y, right_x, right_y;
 
@@ -35,6 +30,7 @@ float Turning_Distance, Wheel_Revolutions, Turn_Wheel_Rotation, Forward_Wheel_Ro
 float Turn_Tuning_Factor = 1;
 float Move_Tuning_Factor = 1.05;
 bool wait = false; 
+
 // New Code
 bool standard_drive = true;
 float y_current, x_current, y_direction, x_direction;
@@ -45,10 +41,10 @@ float down_step = -50;
 float turn_constant = 0.7;
 
 // Defining Motors
-pros::Motor left_front_motor(20,pros::E_MOTOR_GEAR_GREEN, false, pros::E_MOTOR_ENCODER_DEGREES);
-pros::Motor right_front_motor(11,pros::E_MOTOR_GEAR_GREEN, true, pros::E_MOTOR_ENCODER_DEGREES);
-pros::Motor left_back_motor(19,pros::E_MOTOR_GEAR_GREEN, false, pros::E_MOTOR_ENCODER_DEGREES);
-pros::Motor right_back_motor(12,pros::E_MOTOR_GEAR_GREEN, true, pros::E_MOTOR_ENCODER_DEGREES);
+pros::Motor left_front_motor(9,pros::E_MOTOR_GEAR_GREEN, false, pros::E_MOTOR_ENCODER_DEGREES);
+pros::Motor right_front_motor(20,pros::E_MOTOR_GEAR_GREEN, true, pros::E_MOTOR_ENCODER_DEGREES);
+pros::Motor left_back_motor(1,pros::E_MOTOR_GEAR_GREEN, false, pros::E_MOTOR_ENCODER_DEGREES);
+pros::Motor right_back_motor(11,pros::E_MOTOR_GEAR_GREEN, true, pros::E_MOTOR_ENCODER_DEGREES);
 // Set motor groups
 pros::Motor_Group left_motors ({left_front_motor, left_back_motor});
 pros::Motor_Group right_motors ({right_front_motor, right_back_motor});
@@ -140,8 +136,8 @@ void turn(float angle, float velocity){
   left_motors.tare_position();
   right_motors.tare_position();
 
-  left_motors.move_relative(Turn_Wheel_Rotation, velocity);
-  right_motors.move_relative(Turn_Wheel_Rotation, -velocity);
+  left_motors.move_relative(Turn_Wheel_Rotation, -velocity);
+  right_motors.move_relative(Turn_Wheel_Rotation, velocity);
   while (check_left_thresholds(Turn_Wheel_Rotation, 10)) {
     pros::delay(2);
   }
@@ -161,8 +157,8 @@ void left_pivot_turn(float angle, float velocity){
 
   right_motors.tare_position();
 
-  right_motors.move_relative(-Turn_Wheel_Rotation, velocity);
-  while (check_right_thresholds(Turn_Wheel_Rotation, 10)) {
+  right_motors.move_relative(Turn_Wheel_Rotation, velocity);
+  while (check_right_thresholds(-Turn_Wheel_Rotation, 10)) {
     pros::delay(2);
   }
   right_motors.tare_position();
@@ -245,7 +241,7 @@ void opcontrol() {
     
     if (abs(right_x) < abs(left_x)) {
       right_x = left_x;
-
+    }
     // Drive Control Loop (LEFT)
 
     y_direction = sgn(left_y);
@@ -281,13 +277,11 @@ void opcontrol() {
     x_current += x_true_step;
 
     if (standard_drive) {
-      left_motors.move(
-        (y_current * y_direction) + turn_constant * (x_current * x_direction)
-      );
-      right_motors.move((y_current * y_direction) - turn_constant * (x_current * x_direction));
+      left_motors.move((y_current * y_direction) + (turn_constant * x_current * x_direction));
+      right_motors.move((y_current * y_direction) - (turn_constant * x_current * x_direction));
     } else {
-      left_motors.move((y_current * y_direction) - turn_constant * (x_current * x_direction));
-      right_motors.move((y_current * y_direction) + turn_constant * (x_current * x_direction));
+      left_motors.move((y_current * y_direction) - (turn_constant * x_current * x_direction));
+      right_motors.move((y_current * y_direction) + (turn_constant * x_current * x_direction));
     }
 
     pros::delay(20);
