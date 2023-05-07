@@ -11,36 +11,36 @@
 #include "pros/vision.h"
 #include <string>
 #include <cmath>
+#include "MarinRoboticsCustom/math_utils.h"
 using namespace std;
 
-#define DIGITAL_SENSOR_PORT_A 'A'
-#define DIGITAL_SENSOR_PORT_B 'B'
-#define DIGITAL_SENSOR_PORT_C 'C'
-#define DIGITAL_SENSOR_PORT_D 'D'
-#define DIGITAL_SENSOR_PORT_E 'E'
-
-// Variable
-int left_x, left_y, right_x, right_y;
-
-float Wheel_Diameter = 4;
-float Wheel_Circumference = Wheel_Diameter * 3.1416;
-float Turning_Diameter = 14.6;
-float Turning_Circumference = Turning_Diameter * 3.1416;
-float Turning_Distance, Wheel_Revolutions, Turn_Wheel_Rotation, Forward_Wheel_Rotation;
-float Turn_Tuning_Factor = 1;
-float Move_Tuning_Factor = 1.05;
-bool wait = false;
+// Custom Variables
+  // Drive Controls
 bool drive_plus_turning = true; 
 bool drive_plus_forward = true; 
-
-// New Code
 bool standard_drive = true;
-float y_current, x_current, y_direction, x_direction;
-float y_true_step;
-float x_true_step;
+  // Auton
+float Wheel_Diameter = 4;
+float Turning_Diameter = 14.6;
+float Turn_Tuning_Factor = 1;
+float Move_Tuning_Factor = 1.05;
+  // Slew Rate Limiting
 float up_step = 50;
 float down_step = -50;
 float turn_constant = 0.7;
+
+// Static Variables
+  // Main Drive
+  int left_x, left_y, right_x, right_y;
+  // Auton Drive Vars
+float Wheel_Circumference = Wheel_Diameter * 3.1416;
+float Turning_Circumference = Turning_Diameter * 3.1416;
+float Turning_Distance, Wheel_Revolutions, Turn_Wheel_Rotation, Forward_Wheel_Rotation;
+bool wait = false;
+  // Slew Rate Limiting
+float y_current, x_current, y_direction, x_direction;
+float y_true_step;
+float x_true_step;
 
 // Defining Motors
 pros::Motor left_front_motor(9,pros::E_MOTOR_GEAR_GREEN, false, pros::E_MOTOR_ENCODER_DEGREES);
@@ -53,10 +53,6 @@ pros::Motor_Group right_motors ({right_front_motor, right_back_motor});
 
 // Controller
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
-
-template <typename T> int sgn(T val) {
-    return (T(0) < val) - (val < T(0));
-}
 
 void on_center_button() {
 }
@@ -107,6 +103,7 @@ void competition_initialize() {
  * will be stopped. Re-enabling the robot will restart the task, not re-start it
  * from where it left off.
  */
+// Autonomous Functions
 
 bool check_left_thresholds(float left_goal, float threshold) {
   if ((left_front_motor.get_position() > left_goal+threshold) || left_front_motor.get_position() < left_goal-threshold) {
