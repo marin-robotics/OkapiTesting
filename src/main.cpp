@@ -29,7 +29,9 @@ float Turning_Circumference = Turning_Diameter * 3.1416;
 float Turning_Distance, Wheel_Revolutions, Turn_Wheel_Rotation, Forward_Wheel_Rotation;
 float Turn_Tuning_Factor = 1;
 float Move_Tuning_Factor = 1.05;
-bool wait = false; 
+bool wait = false;
+bool drive_plus_turning = true; 
+bool drive_plus_forward = true; 
 
 // New Code
 bool standard_drive = true;
@@ -239,19 +241,24 @@ void opcontrol() {
     float right_y = (controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y));
     float right_x = (controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X));
     
-    if (abs(right_x) < abs(left_x)) {
-      right_x = left_x;
+    if (drive_plus_turning) { // Option to use the right stick for turning
+      if (abs(right_x) < abs(left_x)) {
+        right_x = left_x;
+      }
     }
-    // Drive Control Loop (LEFT)
+    if (drive_plus_forward) { // Option to use the right stick for forward
+      if (abs(right_y) < abs(left_y)) {
+        right_y = left_y;
+      }
+    }
 
+    // Drive Control Loop (LEFT)
     y_direction = sgn(left_y);
     x_direction = sgn(right_x);
 
     float y_goal = powf((abs(left_y) / 127), 2) * 127;
     float x_goal = powf((abs(right_x) / 127), 2) * 127;
-
-//    float x_goal = powf((abs(right_x) / 127), (2 - (y_goal / 127))) * 127;
-
+    
     float y_error = y_goal - y_current;
     float x_error = x_goal - x_current;
 
